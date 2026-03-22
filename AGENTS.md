@@ -52,12 +52,14 @@ Inside an assignment directory:
 ```bash
 make
 make test
+VERBOSE=1 make test
 ```
 
 For focused experiments inside an assignment, use `make run INPUT=...`
 instead of invoking `../dev/<tool>` directly. For a single checked-in case,
 use `make check TEST=...`. Both paths keep dependency checks and rebuilds in
-front of the run.
+front of the run. Add `VERBOSE=1` to see per-test progress and pass lines while
+debugging, for example `VERBOSE=1 make test` or `VERBOSE=1 make check TEST=...`.
 
 From the project root:
 
@@ -66,6 +68,8 @@ From the project root:
   rebuilds skipped
 - `make test-through-paN`: follow the same build-first path, then test
   `pa1` through `paN`
+- `VERBOSE=1 make paN`: rerun one assignment from the root with per-test output
+- `VERBOSE=1 make test-through-paN`: rerun through a failing assignment with per-test output
 
 After finishing `paN`, run `make test-through-paN`. Treat regression testing
 as part of completing the assignment, not as optional cleanup.

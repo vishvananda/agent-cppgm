@@ -11,21 +11,26 @@ if (scalar(@ARGV) != 3)
 my $app = $ARGV[0];
 my $suffix = $ARGV[1];
 my $tests = $ARGV[2];
+my $verbose = $ENV{VERBOSE} || $ENV{CPGM_TEST_VERBOSE};
 
-my @tests = split(/\s+/, `find $tests -type f`);
+my @tests = grep { m/\.t\.1$/ } sort split(/\s+/, `find $tests -type f`);
+my $ntests = scalar(@tests);
 
-for my $test (sort @tests)
+if (!$verbose)
 {
-	next if $test !~ m/\.t\.1$/;
+	print "$tests: running $ntests test";
+	print "s" if $ntests != 1;
+	print "\n";
+}
 
-	print "Running $test...\n";
+for my $test (@tests)
+{
+	print "Running $test...\n" if $verbose;
 
 	my $test_base = $test;
 	$test_base =~ s/\.t\.1$//;
 
 	my $command = "scripts/run_one_test.sh $app $suffix $test_base";
-
-	print "$command\n";
-	my $sys_ret = system($command);
+	print "$command\n" if $verbose;
+	system($command);
 }
-
