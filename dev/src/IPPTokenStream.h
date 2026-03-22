@@ -2,6 +2,7 @@
 
 struct IPPTokenStream
 {
+	virtual void emit_line_number(size_t) {}
 	virtual void emit_whitespace_sequence() = 0;
 	virtual void emit_new_line() = 0;
 	virtual void emit_header_name(const string& data) = 0;
