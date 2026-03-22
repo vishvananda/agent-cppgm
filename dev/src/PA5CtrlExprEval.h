@@ -1,28 +1,3 @@
-// (C) 2013 CPPGM Foundation www.cppgm.org.  All rights reserved.
-
-#include <string>
-#include <vector>
-#include <memory>
-#include <sstream>
-#include <iostream>
-#include <cstdint>
-#include <limits>
-
-using namespace std;
-
-#define CPPGM_POSTTOKEN_NO_MAIN
-#include "posttoken.cpp"
-
-// mock implementation of IsDefinedIdentifier for PA3
-// return true iff first code point is odd
-bool PA3Mock_IsDefinedIdentifier(const string& identifier)
-{
-	if (identifier.empty())
-		return false;
-	else
-		return identifier[0] % 2;
-}
-
 struct Value
 {
 	bool is_unsigned;
@@ -743,7 +718,7 @@ EvalResult Eval(const Node* n)
 		if (n->ident == "false") return {true, MakeSigned(0)};
 		return {true, MakeSigned(0)};
 	case Node::N_DEFINED:
-		return {true, MakeSigned(PA3Mock_IsDefinedIdentifier(n->ident) ? 1 : 0)};
+		return {true, MakeSigned(PA5IsDefinedIdentifier(n->ident) ? 1 : 0)};
 	case Node::N_UNARY:
 	{
 		EvalResult a = Eval(n->a.get());
@@ -881,93 +856,4 @@ EvalResult Eval(const Node* n)
 	}
 
 	return {false, MakeSigned(0)};
-}
-
-struct CtrlExprLineTokenStream : IPPTokenStream
-{
-	vector<PPToken> cur;
-	vector<vector<PPToken>> lines;
-
-	void emit_whitespace_sequence() {}
-
-	void emit_new_line()
-	{
-		lines.push_back(cur);
-		cur.clear();
-	}
-
-	void emit_header_name(const string& data) { cur.push_back({PPTOK_HEADER_NAME, data}); }
-	void emit_identifier(const string& data) { cur.push_back({PPTOK_IDENTIFIER, data}); }
-	void emit_pp_number(const string& data) { cur.push_back({PPTOK_PP_NUMBER, data}); }
-	void emit_character_literal(const string& data) { cur.push_back({PPTOK_CHARACTER_LITERAL, data}); }
-	void emit_user_defined_character_literal(const string& data) { cur.push_back({PPTOK_USER_DEFINED_CHARACTER_LITERAL, data}); }
-	void emit_string_literal(const string& data) { cur.push_back({PPTOK_STRING_LITERAL, data}); }
-	void emit_user_defined_string_literal(const string& data) { cur.push_back({PPTOK_USER_DEFINED_STRING_LITERAL, data}); }
-	void emit_preprocessing_op_or_punc(const string& data) { cur.push_back({PPTOK_PREPROCESSING_OP_OR_PUNC, data}); }
-	void emit_non_whitespace_char(const string& data) { cur.push_back({PPTOK_NON_WHITESPACE_CHAR, data}); }
-
-	void emit_eof()
-	{
-		if (!cur.empty())
-		{
-			lines.push_back(cur);
-			cur.clear();
-		}
-	}
-};
-
-int main()
-{
-	try
-	{
-		ostringstream oss;
-		oss << cin.rdbuf();
-		string input = oss.str();
-
-		CtrlExprLineTokenStream stream;
-		PPTokenizer tokenizer(stream);
-		for (char c : input)
-		{
-			tokenizer.process(static_cast<unsigned char>(c));
-		}
-		tokenizer.process(EndOfFile);
-
-		for (const vector<PPToken>& line : stream.lines)
-		{
-			if (line.empty())
-				continue;
-
-			Parser p(line);
-			unique_ptr<Node> root = p.parse_controlling();
-			if (!root || p.failed || p.pos != line.size())
-			{
-				cout << "error" << endl;
-				continue;
-			}
-
-			EvalResult r = Eval(root.get());
-			if (!r.ok)
-			{
-				cout << "error" << endl;
-				continue;
-			}
-
-			if (r.value.is_unsigned)
-			{
-				cout << AsUnsigned(r.value) << "u" << endl;
-			}
-			else
-			{
-				cout << AsSigned(r.value) << endl;
-			}
-		}
-
-		cout << "eof" << endl;
-		return EXIT_SUCCESS;
-	}
-	catch (exception& e)
-	{
-		cerr << "ERROR: " << e.what() << endl;
-		return EXIT_FAILURE;
-	}
 }
