@@ -11,14 +11,21 @@ if (scalar(@ARGV) != 3)
 my $app = $ARGV[0];
 my $suffix = $ARGV[1];
 my $tests = $ARGV[2];
+my $verbose = $ENV{VERBOSE} || $ENV{CPGM_TEST_VERBOSE};
 
-my @tests = split(/\s+/, `find $tests -type f`);
+my @tests = grep { m/\.t$/ } sort split(/\s+/, `find $tests -type f`);
+my $ntests = scalar(@tests);
 
-for my $test (sort @tests)
+if (!$verbose)
 {
-	next if $test !~ m/\.t$/;
+	print "$tests: running $ntests test";
+	print "s" if $ntests != 1;
+	print "\n";
+}
 
-	print "Running $test...\n";
+for my $test (@tests)
+{
+	print "Running $test...\n" if $verbose;
 
 	my $test_out = $test;
 	$test_out =~ s/\.t$/\.$suffix/;
@@ -32,4 +39,3 @@ for my $test (sort @tests)
 		system("echo EXIT_FAILURE > $test_out.exit_status");
 	}
 }
-

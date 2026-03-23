@@ -9,14 +9,14 @@ all: dev-shared-target
 
 ifeq ($(COURSE_TEST_ROOT),)
 test: dev-shared-target
-	scripts/run_all_tests.pl ../dev/$(PROG) my tests
-	scripts/compare_results.pl ref my tests
+	@scripts/run_all_tests.pl ../dev/$(PROG) my tests
+	@scripts/compare_results.pl ref my tests
 else
 test: dev-shared-target
-	scripts/run_all_tests.pl ../dev/$(PROG) my tests
-	scripts/compare_results.pl ref my tests
-	scripts/run_all_tests.pl ../dev/$(PROG) my $(COURSE_TEST_ROOT)
-	scripts/compare_results.pl ref my $(COURSE_TEST_ROOT)
+	@scripts/run_all_tests.pl ../dev/$(PROG) my tests
+	@scripts/compare_results.pl ref my tests
+	@scripts/run_all_tests.pl ../dev/$(PROG) my $(COURSE_TEST_ROOT)
+	@scripts/compare_results.pl ref my $(COURSE_TEST_ROOT)
 endif
 
 dev-shared-target:
@@ -27,11 +27,11 @@ dev-shared-target:
 		lockdir=$(DEV_BUILD_LOCK); \
 		while ! mkdir $$lockdir 2>/dev/null; do sleep 1; done; \
 		trap 'rmdir "$$lockdir"' EXIT HUP INT TERM; \
-		$(MAKE) -C ../dev $(PROG); \
+		$(MAKE) -s -C ../dev $(PROG); \
 	fi
 
 ref-test:
-	scripts/run_all_tests.pl cy86-ref ref tests
+	@scripts/run_all_tests.pl cy86-ref ref tests
 
 run: dev-shared-target
 	@if [ -z "$(INPUT)" ]; then \
@@ -48,5 +48,5 @@ check: dev-shared-target
 		echo "Usage: make check TEST=<checked-in-test-file>"; \
 		exit 1; \
 	fi
-	scripts/run_all_tests.pl ../dev/$(PROG) check "$(TEST)"
-	scripts/compare_results.pl ref check "$(TEST)"
+	@scripts/run_all_tests.pl ../dev/$(PROG) check "$(TEST)"
+	@scripts/compare_results.pl ref check "$(TEST)"

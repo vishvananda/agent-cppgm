@@ -2,6 +2,8 @@
 
 use strict;
 use warnings;
+use Cwd qw(getcwd);
+use File::Basename qw(basename dirname);
 
 if (scalar(@ARGV) != 3)
 {
@@ -11,22 +13,37 @@ if (scalar(@ARGV) != 3)
 my $ref_suffix = $ARGV[0];
 my $my_suffix = $ARGV[1];
 my $tests = $ARGV[2];
+my $verbose = $ENV{VERBOSE} || $ENV{CPGM_TEST_VERBOSE};
+my $cwd = getcwd();
+my $assignment = basename($cwd);
+my $repo_root = dirname($cwd);
 
-my @tests = split(/\s+/, `find $tests -type f`);
+my @tests = grep { m/\.t$/ } sort split(/\s+/, `find $tests -type f`);
+my $suite_total = scalar(@tests);
 
-my $ntests = 0;
 my $npass = 0;
 
-for my $test (sort @tests)
+sub rooted_path
 {
-	next if $test !~ m/\.t$/;
+	my ($path) = @_;
+	return $path =~ m{^/} ? $path : "$cwd/$path";
+}
 
-	print "\n$test: ";
+sub fail_prefix
+{
+	return "$tests: FAIL after $npass/$suite_total passed\n";
+}
 
-	$ntests++;
+sub rerun_hint
+{
+	return "To rerun this assignment with per-test output from the repo root:\n\n    \$ cd $repo_root && VERBOSE=1 make $assignment\n\n";
+}
+
+for my $test (@tests)
+{
+	print "\n$test: " if $verbose;
 
 	my $testbase = $test;
-
 	$testbase =~ s/\.t$//;
 
 	my $reftest = "$testbase.$ref_suffix";
@@ -38,7 +55,7 @@ for my $test (sort @tests)
 	my $reftest_exit_status_data = `cat $reftest_exit_status`;
 	my $mytest_data = `cat $mytest`;
 	my $mytest_exit_status_data = `cat $mytest_exit_status`;
-	
+
 	chomp($reftest_data);
 	chomp($reftest_exit_status_data);
 	chomp($mytest_data);
@@ -46,26 +63,28 @@ for my $test (sort @tests)
 
 	if ($reftest_exit_status_data ne $mytest_exit_status_data)
 	{
-		print "ERROR: Expected $reftest_exit_status_data, got $mytest_exit_status_data\n\n";
-		
+		print fail_prefix();
+		print "$test: ERROR: Expected $reftest_exit_status_data, got $mytest_exit_status_data\n\n";
+		print rerun_hint();
 		print "TEST FAIL\n";
 		exit(1);
 	}
 	elsif ($reftest_exit_status_data =~ /EXIT_FAILURE/ or ($reftest_data eq $mytest_data))
 	{
 		$npass++;
-		print "PASS\n\n";
+		print "PASS\n\n" if $verbose;
 	}
 	else
 	{
-		print "ERROR: Output does not match reference implementation\n";
-		print "\n";
-		print "To see input file:\n\n    \$ cat $test\n\n";
-		print "To see hex dump of input:\n\n    \$ xxd $test\n\n";
-		print "To see the differences of output:\n\n    \$ diff $reftest $mytest\n\n";
+		print fail_prefix();
+		print "$test: ERROR: Output does not match reference implementation\n\n";
+		print "To rerun this assignment with per-test output from the repo root:\n\n    \$ cd $repo_root && VERBOSE=1 make $assignment\n\n";
+		print "To see input file:\n\n    \$ cat " . rooted_path($test) . "\n\n";
+		print "To see hex dump of input:\n\n    \$ xxd " . rooted_path($test) . "\n\n";
+		print "To see the differences of output:\n\n    \$ diff " . rooted_path($reftest) . " " . rooted_path($mytest) . "\n\n";
 		print "TEST FAIL\n";
 		exit(1);
 	}
 }
 
-print "ALL TESTS PASS\n";
+print "$tests: PASS ($npass/$suite_total)\n";
